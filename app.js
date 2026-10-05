@@ -106,20 +106,29 @@ app.delete("/mahasiswa/:id", cekApiKey,(req, res, next) => {
   res.status(204).send();
 });
 
-// Middleware untuk menangani error
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(err.status || 500).json({ message: err.message });
+// Handler 404: rute yang tidak ada
+app.use((req, res) => {
+  res.status(404).json({ message: `Rute ${req.method} ${req.originalUrl} tidak ditemukan` });
 });
 
-  // error handler : wajib 4 parameter
+// Error handler: WAJIB 4 parameter
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(err.status || 500).json({ message: err.message });
+  // Body JSON yang rusak (dilempar oleh express.json())
+  if (err.type === 'entity.parse.failed') {
+    return res.status(400).json({ message: 'Format JSON tidak valid' });
+  }
+
+  const status = err.status || 500;
+
+  if (status === 500) {
+    console.error(err.stack); // detail hanya dicatat di server
+    return res.status(500).json({ message: 'Terjadi kesalahan pada server' });
+  }
+
+  res.status(status).json({ message: err.message });
 });
 
 // menjalankan aplikasi pada port 3000
 app.listen(PORT, () => {
   console.log(`Server berjalan di http://localhost:${PORT}`);
 });
-
